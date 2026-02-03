@@ -93,9 +93,9 @@ class ThemeProvider extends ChangeNotifier {
       colorScheme: const ColorScheme.dark(
         primary: Color(0xFF8B95FF),
         onPrimary: Colors.white,
-        secondary: Color(0xFF2E3340),
+        secondary: Color(0xFF2A2F3A),
         onSecondary: Color(0xFFE6E9EF),
-        surface: Color(0xFF181B21),
+        surface: Color(0xFF1A1F27),
         onSurface: Color(0xFFE6E9EF),
         background: Color(0xFF0F1115),
         onBackground: Color(0xFFE6E9EF),
@@ -103,18 +103,20 @@ class ThemeProvider extends ChangeNotifier {
         onError: Colors.white,
       ),
       scaffoldBackgroundColor: const Color(0xFF0F1115),
+      shadowColor: const Color(0x55FFFFFF),
+      dividerColor: const Color(0xFF232733),
       appBarTheme: const AppBarTheme(
         backgroundColor: Color(0xFF0F1115),
         foregroundColor: Color(0xFFE6E9EF),
         elevation: 0,
       ),
       cardTheme: const CardThemeData(
-        color: Color(0xFF181B21),
+        color: Color(0xFF1A1F27),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
         elevation: 3,
-        shadowColor: Color(0x33000000),
+        shadowColor: Color(0x33FFFFFF),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: const Color(0xFF232733),
@@ -124,9 +126,13 @@ class ThemeProvider extends ChangeNotifier {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
+      iconTheme: const IconThemeData(color: Color(0xFFE6E9EF)),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(0xFF0F1115),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF181B21),
+        fillColor: const Color(0xFF1A1F27),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFF232733)),

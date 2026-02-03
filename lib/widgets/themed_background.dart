@@ -26,6 +26,22 @@ class ThemedBackground extends StatelessWidget {
         child: child,
       );
     }
+    if (themeName == 'dark') {
+      return Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF0F1115),
+              Color(0xFF141925),
+              Color(0xFF0F1115),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: child,
+      );
+    }
     return child;
   }
 }

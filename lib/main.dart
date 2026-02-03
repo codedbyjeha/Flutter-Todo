@@ -26,11 +26,10 @@ class MyApp extends StatelessWidget {
       ],
       child: Builder(
         builder: (context) {
-          final theme = context.watch<ThemeProvider>().themeData.copyWith(
-                textTheme: GoogleFonts.outfitTextTheme(
-                  Theme.of(context).textTheme,
-                ),
-              );
+          final baseTheme = context.watch<ThemeProvider>().themeData;
+          final theme = baseTheme.copyWith(
+            textTheme: GoogleFonts.outfitTextTheme(baseTheme.textTheme),
+          );
           return AnimatedTheme(
             data: theme,
             duration: const Duration(milliseconds: 280),

@@ -60,7 +60,9 @@ class StatsScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.06),
+                              color: (Theme.of(context).cardTheme.shadowColor ??
+                                      Theme.of(context).shadowColor)
+                                  .withOpacity(0.12),
                               blurRadius: 16,
                               offset: const Offset(0, 6),
                             ),
@@ -108,7 +110,9 @@ class StatsScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.06),
+                              color: (Theme.of(context).cardTheme.shadowColor ??
+                                      Theme.of(context).shadowColor)
+                                  .withOpacity(0.12),
                               blurRadius: 14,
                               offset: const Offset(0, 6),
                             ),
@@ -269,7 +273,9 @@ class _QuickCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: (Theme.of(context).cardTheme.shadowColor ??
+                    Theme.of(context).shadowColor)
+                .withOpacity(0.12),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),

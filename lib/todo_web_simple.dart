@@ -118,7 +118,9 @@ class _TodoWebSimpleState extends State<TodoWebSimple> {
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
+                            color: (Theme.of(context).cardTheme.shadowColor ??
+                                    Theme.of(context).shadowColor)
+                                .withOpacity(0.14),
                             blurRadius: 20,
                             offset: const Offset(0, 5),
                           ),
@@ -144,7 +146,7 @@ class _TodoWebSimpleState extends State<TodoWebSimple> {
                                   title: 'Pending',
                                   count: activeCount.toString(),
                                   icon: Icons.timer,
-                                  color: scheme.secondary,
+                                  color: scheme.primary,
                                 ),
                                 const SizedBox(height: 12),
                                 StatCard(
