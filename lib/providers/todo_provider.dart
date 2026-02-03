@@ -15,6 +15,7 @@ class TodoProvider extends ChangeNotifier {
   String _priorityFilter = 'All';
   String _repeatFilter = 'All';
   String _searchQuery = '';
+  String _sortMode = 'Default'; // Default, Due Date, Priority, Title, Created
   bool _showOverdueOnly = false;
   bool _showTodayOnly = false;
   final Set<String> _selectedTags = {};
@@ -23,6 +24,7 @@ class TodoProvider extends ChangeNotifier {
   String get categoryFilter => _categoryFilter;
   String get priorityFilter => _priorityFilter;
   String get repeatFilter => _repeatFilter;
+  String get sortMode => _sortMode;
   bool get showOverdueOnly => _showOverdueOnly;
   bool get showTodayOnly => _showTodayOnly;
   Set<String> get selectedTags => Set.unmodifiable(_selectedTags);
@@ -84,6 +86,8 @@ class TodoProvider extends ChangeNotifier {
 
   Future<void> loadTodos() async {
     try {
+      await _dbHelper.claimTodosForUser(userId);
+      await _dbHelper.clearRepeatRules(userId);
       _todos = await _dbHelper.getTodos(userId);
       _sortTodos(_todos);
       notifyListeners();
@@ -147,26 +151,36 @@ class TodoProvider extends ChangeNotifier {
   }
 
   Future<void> setCompletion(Todo todo, bool isCompleted) async {
-    final bool wasCompleted = todo.isCompleted;
-    final newTodo = todo.copyWith(
-      isCompleted: isCompleted,
-      completedAt: isCompleted ? DateTime.now() : null,
-    );
-    await updateTodo(newTodo);
-
-    if (!wasCompleted && isCompleted && todo.repeatRule != 'None') {
-      final DateTime base = todo.dueDate ?? DateTime.now();
-      final DateTime nextDue = todo.repeatRule == 'Daily'
-          ? base.add(const Duration(days: 1))
-          : base.add(const Duration(days: 7));
-      final Todo repeated = todo.copyWith(
-        id: null,
-        isCompleted: false,
-        completedAt: null,
-        createdAt: DateTime.now(),
-        dueDate: nextDue,
+    try {
+      final newTodo = todo.copyWith(
+        isCompleted: isCompleted,
+        completedAt: isCompleted ? DateTime.now() : null,
+        repeatRule: 'None',
       );
-      await addTodo(repeated);
+      final int localIndex = _todos.indexWhere((t) => t.id == todo.id);
+      if (localIndex != -1) {
+        _todos[localIndex] = newTodo;
+        notifyListeners();
+      }
+      await _dbHelper.updateTodo(newTodo);
+      try {
+        if (newTodo.dueDate != null && newTodo.isReminderActive) {
+          await _notificationHelper.cancelNotification(newTodo.id!);
+          await _notificationHelper.scheduleNotification(
+            newTodo.id!,
+            'Reminder: ${newTodo.title}',
+            newTodo.description.isNotEmpty ? newTodo.description : 'It\'s time for your task!',
+            newTodo.dueDate!,
+          );
+        } else {
+          await _notificationHelper.cancelNotification(newTodo.id!);
+        }
+      } catch (e) {
+        debugPrint('Notification update failed: $e');
+      }
+      await loadTodos();
+    } catch (e) {
+      debugPrint('Error updating completion: $e');
     }
   }
 
@@ -187,6 +201,11 @@ class TodoProvider extends ChangeNotifier {
 
   void setRepeatFilter(String filter) {
     _repeatFilter = filter;
+    notifyListeners();
+  }
+
+  void setSortMode(String mode) {
+    _sortMode = mode;
     notifyListeners();
   }
 
@@ -232,6 +251,28 @@ class TodoProvider extends ChangeNotifier {
     }
 
     list.sort((a, b) {
+      if (_sortMode != 'Default') {
+        if (a.isCompleted != b.isCompleted) {
+          return a.isCompleted ? 1 : -1;
+        }
+        if (_sortMode == 'Due Date') {
+          final aDue = a.dueDate ?? DateTime(2100);
+          final bDue = b.dueDate ?? DateTime(2100);
+          final dueCompare = aDue.compareTo(bDue);
+          if (dueCompare != 0) return dueCompare;
+        } else if (_sortMode == 'Priority') {
+          final priorityCompare = priorityWeight(b.priority) - priorityWeight(a.priority);
+          if (priorityCompare != 0) return priorityCompare;
+        } else if (_sortMode == 'Title') {
+          final titleCompare = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+          if (titleCompare != 0) return titleCompare;
+        } else if (_sortMode == 'Created') {
+          final createdCompare = b.createdAt.compareTo(a.createdAt);
+          if (createdCompare != 0) return createdCompare;
+        }
+        return b.createdAt.compareTo(a.createdAt);
+      }
+
       if (a.isCompleted != b.isCompleted) {
         return a.isCompleted ? 1 : -1;
       }

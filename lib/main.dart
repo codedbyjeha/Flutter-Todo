@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'providers/auth_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/home_shell.dart';
 import 'screens/login_screen.dart';
 
@@ -21,30 +22,36 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: MaterialApp(
-        title: 'DM Todo',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.indigo,
-            brightness: Brightness.light,
-          ),
-          textTheme: GoogleFonts.outfitTextTheme(
-            Theme.of(context).textTheme,
-          ),
-        ),
-        home: Consumer<AuthProvider>(
-          builder: (context, auth, child) {
-            if (auth.isLoading) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
+      child: Builder(
+        builder: (context) {
+          final theme = context.watch<ThemeProvider>().themeData.copyWith(
+                textTheme: GoogleFonts.outfitTextTheme(
+                  Theme.of(context).textTheme,
+                ),
               );
-            }
-            return auth.currentUser == null ? const LoginScreen() : const HomeShell();
-          },
-        ),
+          return AnimatedTheme(
+            data: theme,
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOut,
+            child: MaterialApp(
+              title: 'DM Todo',
+              debugShowCheckedModeBanner: false,
+              theme: theme,
+              home: Consumer<AuthProvider>(
+                builder: (context, auth, child) {
+                  if (auth.isLoading) {
+                    return const Scaffold(
+                      body: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  return auth.currentUser == null ? const LoginScreen() : const HomeShell();
+                },
+              ),
+            ),
+          );
+        },
       ),
     );
   }

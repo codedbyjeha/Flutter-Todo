@@ -20,7 +20,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'todo_database.db');
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -31,7 +31,8 @@ class DatabaseHelper {
       CREATE TABLE users(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
-        password TEXT
+        password TEXT,
+        photoBase64 TEXT
       )
     ''');
     await db.execute('''
@@ -59,13 +60,17 @@ class DatabaseHelper {
         CREATE TABLE IF NOT EXISTS users(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           username TEXT UNIQUE,
-          password TEXT
+          password TEXT,
+          photoBase64 TEXT
         )
       ''');
       await db.execute("ALTER TABLE todos ADD COLUMN userId INTEGER");
       await db.execute("ALTER TABLE todos ADD COLUMN repeatRule TEXT");
       await db.execute("ALTER TABLE todos ADD COLUMN tags TEXT");
       await db.execute("ALTER TABLE todos ADD COLUMN completedAt TEXT");
+    }
+    if (oldVersion < 3) {
+      await db.execute("ALTER TABLE users ADD COLUMN photoBase64 TEXT");
     }
   }
 
@@ -84,6 +89,26 @@ class DatabaseHelper {
     return List.generate(maps.length, (i) {
       return Todo.fromMap(maps[i]);
     });
+  }
+
+  Future<int> claimTodosForUser(int userId) async {
+    Database db = await database;
+    return await db.update(
+      'todos',
+      {'userId': userId},
+      where: 'userId IS NULL OR userId = ?',
+      whereArgs: [0],
+    );
+  }
+
+  Future<int> clearRepeatRules(int userId) async {
+    Database db = await database;
+    return await db.update(
+      'todos',
+      {'repeatRule': 'None'},
+      where: 'userId = ? AND repeatRule != ?',
+      whereArgs: [userId, 'None'],
+    );
   }
 
   Future<int> updateTodo(Todo todo) async {
@@ -144,5 +169,15 @@ class DatabaseHelper {
     );
     if (result.isEmpty) return null;
     return AppUser.fromMap(result.first);
+  }
+
+  Future<int> updateUser(AppUser user) async {
+    Database db = await database;
+    return await db.update(
+      'users',
+      user.toMap(),
+      where: 'id = ?',
+      whereArgs: [user.id],
+    );
   }
 }

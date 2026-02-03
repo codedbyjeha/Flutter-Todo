@@ -64,6 +64,32 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateProfilePhoto(String? photoBase64) async {
+    if (_currentUser == null) return;
+    final updated = _currentUser!.copyWith(photoBase64: photoBase64);
+    await _dbHelper.updateUser(updated);
+    _currentUser = updated;
+    notifyListeners();
+  }
+
+  Future<String?> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    if (_currentUser == null) return 'User belum login';
+    if (_currentUser!.password != currentPassword) {
+      return 'Password lama salah';
+    }
+    if (newPassword.length < 4) {
+      return 'Password baru terlalu pendek';
+    }
+    final updated = _currentUser!.copyWith(password: newPassword);
+    await _dbHelper.updateUser(updated);
+    _currentUser = updated;
+    notifyListeners();
+    return null;
+  }
+
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();

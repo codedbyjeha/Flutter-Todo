@@ -29,8 +29,14 @@ class TodoItem extends StatelessWidget {
     }
   }
 
+  bool _isOverdue(Todo todo) {
+    return !todo.isCompleted && todo.dueDate != null && todo.dueDate!.isBefore(DateTime.now());
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bool isOverdue = _isOverdue(todo);
+    final scheme = Theme.of(context).colorScheme;
     return Dismissible(
       key: Key(todo.id.toString()),
       background: Container(
@@ -78,7 +84,7 @@ class TodoItem extends StatelessWidget {
           leading: Checkbox(
             value: todo.isCompleted,
             onChanged: onChanged,
-            activeColor: Colors.indigo,
+            activeColor: scheme.primary,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
           ),
           title: Text(
@@ -87,7 +93,9 @@ class TodoItem extends StatelessWidget {
               fontSize: 16,
               fontWeight: FontWeight.w600,
               decoration: todo.isCompleted ? TextDecoration.lineThrough : null,
-              color: todo.isCompleted ? Colors.grey : Colors.black87,
+              color: todo.isCompleted
+                  ? Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.5)
+                  : Theme.of(context).textTheme.bodyLarge?.color,
             ),
           ),
           subtitle: Column(
@@ -101,51 +109,55 @@ class TodoItem extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
                       fontSize: 12,
                     ),
                   ),
                 ),
               const SizedBox(height: 8),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.indigo.shade50,
+                      color: scheme.secondary.withOpacity(0.25),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       todo.category,
                       style: TextStyle(
                         fontSize: 10,
-                        color: Colors.indigo.shade700,
+                        color: scheme.primary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-                  if (todo.dueDate != null) ...[
-                    const SizedBox(width: 8),
-                    Icon(
-                      todo.isReminderActive ? Icons.alarm : Icons.calendar_today,
-                      size: 12,
-                      color: Colors.grey,
+                  if (todo.dueDate != null)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          todo.isReminderActive ? Icons.alarm : Icons.calendar_today,
+                          size: 12,
+                          color: isOverdue ? Theme.of(context).colorScheme.error : Theme.of(context).iconTheme.color,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          DateFormat('MMM d, HH:mm').format(todo.dueDate!),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isOverdue
+                                ? Theme.of(context).colorScheme.error
+                                : Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
+                            fontWeight: isOverdue ? FontWeight.w600 : FontWeight.normal,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      DateFormat('MMM d, HH:mm').format(todo.dueDate!),
-                      style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                    ),
-                  ],
-                  if (todo.repeatRule != 'None') ...[
-                    const SizedBox(width: 8),
-                    const Icon(Icons.repeat, size: 12, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(
-                      todo.repeatRule,
-                      style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                    ),
-                  ],
+                  
                 ],
               ),
               if (todo.tags.isNotEmpty) ...[
@@ -158,14 +170,14 @@ class TodoItem extends StatelessWidget {
                         (tag) => Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade200,
+                            color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             '#$tag',
                             style: TextStyle(
                               fontSize: 9,
-                              color: Colors.grey.shade700,
+                              color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.8),
                               fontWeight: FontWeight.w500,
                             ),
                           ),

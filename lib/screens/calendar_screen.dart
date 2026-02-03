@@ -5,6 +5,7 @@ import '../models/todo_model.dart';
 import '../providers/todo_provider.dart';
 import '../widgets/todo_item.dart';
 import '../widgets/add_todo_dialog.dart';
+import '../widgets/themed_background.dart';
 
 class CalendarScreen extends StatelessWidget {
   const CalendarScreen({super.key});
@@ -29,48 +30,50 @@ class CalendarScreen extends StatelessWidget {
         final dates = grouped.keys.toList()..sort();
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF8F9FE),
+          backgroundColor: Theme.of(context).colorScheme.background,
           appBar: AppBar(
             title: const Text('Calendar / Agenda'),
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
             elevation: 0,
-            foregroundColor: Colors.black87,
+            foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
           ),
-          body: dates.isEmpty
-              ? Center(
-                  child: Text(
-                    'Belum ada task dengan due date',
-                    style: TextStyle(color: Colors.grey.shade500),
-                  ),
-                )
-              : ListView.builder(
-                  itemCount: dates.length,
-                  itemBuilder: (context, index) {
-                    final date = dates[index];
-                    final items = grouped[date]!;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            DateFormat('EEEE, MMM d').format(date),
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 6),
-                          ...items.map(
-                            (todo) => TodoItem(
-                              todo: todo,
-                              onChanged: (val) => provider.setCompletion(todo, val ?? false),
-                              onDelete: () => provider.deleteTodo(todo.id!),
-                              onTap: () => _showAddTodoDialog(context, todo: todo, userId: provider.userId),
+          body: ThemedBackground(
+            child: dates.isEmpty
+                ? Center(
+                    child: Text(
+                      'Belum ada task dengan due date',
+                      style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6)),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: dates.length,
+                    itemBuilder: (context, index) {
+                      final date = dates[index];
+                      final items = grouped[date]!;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              DateFormat('EEEE, MMM d').format(date),
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                            const SizedBox(height: 6),
+                            ...items.map(
+                              (todo) => TodoItem(
+                                todo: todo,
+                                onChanged: (val) => provider.setCompletion(todo, val ?? false),
+                                onDelete: () => provider.deleteTodo(todo.id!),
+                                onTap: () => _showAddTodoDialog(context, todo: todo, userId: provider.userId),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
         );
       },
     );
@@ -82,9 +85,9 @@ class CalendarScreen extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: AddTodoDialog(todo: todo, userId: userId),
       ),

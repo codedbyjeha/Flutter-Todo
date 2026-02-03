@@ -22,11 +22,9 @@ class _AddTodoDialogState extends State<AddTodoDialog> {
   bool _isReminderActive = false;
   String _priority = 'Medium';
   String _category = 'General';
-  String _repeatRule = 'None';
 
   final List<String> _priorities = ['Low', 'Medium', 'High'];
   final List<String> _categories = ['General', 'Work', 'Personal', 'Shopping', 'Health', 'Education'];
-  final List<String> _repeatRules = ['None', 'Daily', 'Weekly'];
 
   @override
   void initState() {
@@ -39,7 +37,6 @@ class _AddTodoDialogState extends State<AddTodoDialog> {
       _isReminderActive = widget.todo!.isReminderActive;
       _priority = widget.todo!.priority;
       _category = widget.todo!.category;
-      _repeatRule = widget.todo!.repeatRule;
       if (widget.todo!.dueDate != null) {
         _selectedDate = widget.todo!.dueDate;
         _selectedTime = TimeOfDay.fromDateTime(widget.todo!.dueDate!);
@@ -100,7 +97,7 @@ class _AddTodoDialogState extends State<AddTodoDialog> {
                 widget.todo == null ? 'New Task' : 'Edit Task',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.indigo,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -109,7 +106,6 @@ class _AddTodoDialogState extends State<AddTodoDialog> {
                 controller: _titleController,
                 decoration: const InputDecoration(
                   labelText: 'Title',
-                  border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.title),
                 ),
                 validator: (value) {
@@ -124,7 +120,6 @@ class _AddTodoDialogState extends State<AddTodoDialog> {
                 controller: _descriptionController,
                 decoration: const InputDecoration(
                   labelText: 'Description',
-                  border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.description),
                 ),
                 maxLines: 3,
@@ -134,10 +129,9 @@ class _AddTodoDialogState extends State<AddTodoDialog> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _priority,
+                      initialValue: _priority,
                       decoration: const InputDecoration(
                         labelText: 'Priority',
-                        border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                       ),
                       items: _priorities.map((String value) {
@@ -152,10 +146,9 @@ class _AddTodoDialogState extends State<AddTodoDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _category,
+                      initialValue: _category,
                       decoration: const InputDecoration(
                         labelText: 'Category',
-                        border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                       ),
                       items: _categories.map((String value) {
@@ -170,34 +163,17 @@ class _AddTodoDialogState extends State<AddTodoDialog> {
                 ],
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: _repeatRule,
-                decoration: const InputDecoration(
-                  labelText: 'Repeat',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                ),
-                items: _repeatRules.map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (val) => setState(() => _repeatRule = val!),
-              ),
-              const SizedBox(height: 12),
               TextFormField(
                 controller: _tagsController,
                 decoration: const InputDecoration(
                   labelText: 'Tags (pisahkan dengan koma)',
-                  border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.tag),
                 ),
               ),
               const SizedBox(height: 16),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.notifications_active, color: Colors.indigo),
+                leading: Icon(Icons.notifications_active, color: Theme.of(context).colorScheme.primary),
                 title: Text(_selectedDate == null
                     ? 'Set Reminder'
                     : 'Remind me on ${DateFormat('MMM d, HH:mm').format(
@@ -225,8 +201,6 @@ class _AddTodoDialogState extends State<AddTodoDialog> {
               const SizedBox(height: 24),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.indigo,
-                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -254,7 +228,7 @@ class _AddTodoDialogState extends State<AddTodoDialog> {
                       isReminderActive: _isReminderActive,
                       priority: _priority,
                       category: _category,
-                      repeatRule: _repeatRule,
+                      repeatRule: 'None',
                       tags: _tagsController.text
                           .split(',')
                           .map((t) => t.trim())

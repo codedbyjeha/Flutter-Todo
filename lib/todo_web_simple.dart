@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/todo_provider.dart';
@@ -7,6 +10,8 @@ import 'widgets/add_todo_dialog.dart';
 import 'widgets/dashboard_chart.dart';
 import 'widgets/stat_card.dart';
 import 'models/todo_model.dart';
+import 'screens/profile_screen.dart';
+import 'widgets/themed_background.dart';
 
 class TodoWebSimple extends StatefulWidget {
   const TodoWebSimple({super.key});
@@ -16,39 +21,41 @@ class TodoWebSimple extends StatefulWidget {
 }
 
 class _TodoWebSimpleState extends State<TodoWebSimple> {
-  String _selectedCategory = 'All';
-  final List<String> _categories = ['All', 'General', 'Work', 'Personal', 'Shopping', 'Health', 'Education'];
-  final List<String> _priorities = ['All', 'Low', 'Medium', 'High'];
-  final List<String> _repeatRules = ['All', 'None', 'Daily', 'Weekly'];
-  final TextEditingController _searchController = TextEditingController();
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
+  String _selectedCategory = 'General';
+  final List<String> _categories = ['All', 'General', 'Work', 'Personal', 'Shopping', 'Health', 'Education', 'Done'];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FE), // Modern light bg
+      backgroundColor: Theme.of(context).colorScheme.background,
       body: Consumer<TodoProvider>(
         builder: (context, provider, child) {
+          final scheme = Theme.of(context).colorScheme;
+          final auth = context.watch<AuthProvider>();
+          final user = auth.currentUser;
+          final photoBytes = _decodePhoto(user?.photoBase64);
           final allTodos = provider.allTodos;
           final visibleTodos = provider.todos;
           final int activeCount = allTodos.where((t) => !t.isCompleted).length;
           final int doneCount = allTodos.where((t) => t.isCompleted).length;
+          final now = DateTime.now();
+          final int overdueCount = allTodos.where((t) {
+            return !t.isCompleted && t.dueDate != null && t.dueDate!.isBefore(now);
+          }).length;
           // final int totalCount = allTodos.length;
 
           // Apply Category Filter locally for the LIST view
           final displayTodos = _selectedCategory == 'All'
               ? visibleTodos
-              : visibleTodos.where((t) => t.category == _selectedCategory).toList();
+              : _selectedCategory == 'Done'
+                  ? visibleTodos.where((t) => t.isCompleted).toList()
+                  : visibleTodos.where((t) => t.category == _selectedCategory && !t.isCompleted).toList();
 
-          final username = Provider.of<AuthProvider>(context, listen: false).currentUser?.username ?? 'Guest';
+          final username = user?.username ?? 'Guest';
           return SafeArea(
-            child: CustomScrollView(
-              slivers: [
+            child: ThemedBackground(
+              child: CustomScrollView(
+                slivers: [
                 // 1. Header & Greeting + Search
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -66,58 +73,35 @@ class _TodoWebSimpleState extends State<TodoWebSimple> {
                                   'Hello, $username',
                                   style: TextStyle(
                                     fontSize: 16,
-                                    color: Colors.grey.shade600,
+                                    color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                const Text(
+                                Text(
                                   'Your Dashboard',
                                   style: TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
+                                    color: scheme.onBackground,
                                   ),
                                 ),
                               ],
                             ),
-                            CircleAvatar(
-                              backgroundColor: Colors.indigo.shade50,
-                              child: const Icon(Icons.person, color: Colors.indigo),
+                            InkWell(
+                              borderRadius: BorderRadius.circular(30),
+                              onTap: () => _openProfile(context),
+                              child: CircleAvatar(
+                                backgroundColor: scheme.secondary.withOpacity(0.3),
+                                backgroundImage: photoBytes != null ? MemoryImage(photoBytes) : null,
+                                child: photoBytes == null
+                                    ? Icon(Icons.person, color: scheme.primary)
+                                    : null,
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _searchController,
-                                decoration: InputDecoration(
-                                  hintText: 'Search tasks...',
-                                  prefixIcon: const Icon(Icons.search),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey.shade200),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey.shade200),
-                                  ),
-                                ),
-                                onChanged: provider.setSearchQuery,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              onPressed: () => _openFilters(context, provider),
-                              icon: const Icon(Icons.tune),
-                              tooltip: 'Filters',
-                            ),
-                          ],
-                        ),
                       ],
                     ),
                   ),
@@ -130,11 +114,11 @@ class _TodoWebSimpleState extends State<TodoWebSimple> {
                     child: Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).cardTheme.color ?? scheme.surface,
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.05),
+                            color: Colors.black.withOpacity(0.06),
                             blurRadius: 20,
                             offset: const Offset(0, 5),
                           ),
@@ -160,7 +144,7 @@ class _TodoWebSimpleState extends State<TodoWebSimple> {
                                   title: 'Pending',
                                   count: activeCount.toString(),
                                   icon: Icons.timer,
-                                  color: Colors.orange,
+                                  color: scheme.secondary,
                                 ),
                                 const SizedBox(height: 12),
                                 StatCard(
@@ -168,6 +152,13 @@ class _TodoWebSimpleState extends State<TodoWebSimple> {
                                   count: doneCount.toString(),
                                   icon: Icons.check_circle,
                                   color: Colors.green,
+                                ),
+                                const SizedBox(height: 12),
+                                StatCard(
+                                  title: 'Overdue',
+                                  count: overdueCount.toString(),
+                                  icon: Icons.error_outline,
+                                  color: scheme.error,
                                 ),
                               ],
                             ),
@@ -198,17 +189,26 @@ class _TodoWebSimpleState extends State<TodoWebSimple> {
                               setState(() {
                                 _selectedCategory = cat;
                               });
-                              provider.setCategoryFilter(cat);
+                              if (cat == 'Done') {
+                                provider.setStatusFilter('Done');
+                                provider.setCategoryFilter('All');
+                              } else if (cat == 'All') {
+                                provider.setStatusFilter('All');
+                                provider.setCategoryFilter('All');
+                              } else {
+                                provider.setStatusFilter('Active');
+                                provider.setCategoryFilter(cat);
+                              }
                             },
-                            selectedColor: Colors.indigo,
+                            selectedColor: scheme.primary,
                             labelStyle: TextStyle(
-                              color: isSelected ? Colors.white : Colors.indigo,
+                              color: isSelected ? scheme.onPrimary : scheme.primary,
                               fontWeight: FontWeight.w600,
                             ),
-                            backgroundColor: Colors.indigo.shade50,
+                            backgroundColor: Theme.of(context).chipTheme.backgroundColor,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
-                              side: BorderSide(color: Colors.indigo.shade50),
+                              side: BorderSide(color: Theme.of(context).chipTheme.backgroundColor ?? scheme.surface),
                             ),
                           ),
                         );
@@ -231,14 +231,7 @@ class _TodoWebSimpleState extends State<TodoWebSimple> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        TextButton(
-                          onPressed: () {
-                             // Reset filter in provider if needed, or open full list page
-                             Provider.of<TodoProvider>(context, listen: false).setStatusFilter('All');
-                             // Just for demo, we are showing all tasks in this list anyway
-                          },
-                          child: const Text('See All'),
-                        ),
+                        
                       ],
                     ),
                   ),
@@ -252,11 +245,11 @@ class _TodoWebSimpleState extends State<TodoWebSimple> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.assignment_add, size: 60, color: Colors.indigo.shade100),
+                              Icon(Icons.assignment_add, size: 60, color: scheme.primary.withOpacity(0.25)),
                               const SizedBox(height: 16),
                               Text(
                                 'No tasks found',
-                                style: TextStyle(color: Colors.grey.shade400),
+                                style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6)),
                               ),
                             ],
                           ),
@@ -283,6 +276,7 @@ class _TodoWebSimpleState extends State<TodoWebSimple> {
                   const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
               ],
             ),
+          ),
           );
         },
       ),
@@ -290,9 +284,15 @@ class _TodoWebSimpleState extends State<TodoWebSimple> {
         builder: (context, provider, child) {
           return FloatingActionButton.extended(
             onPressed: () => _showAddTodoDialog(context, provider: provider),
-            backgroundColor: Colors.indigo,
-            icon: const Icon(Icons.add_task, color: Colors.white),
-            label: const Text('Add Task', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            icon: Icon(Icons.add_task, color: Theme.of(context).colorScheme.onPrimary),
+            label: Text(
+              'Add Task',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             elevation: 4,
             highlightElevation: 8,
           );
@@ -307,9 +307,9 @@ class _TodoWebSimpleState extends State<TodoWebSimple> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent, // Transparent for rounded corners
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: AddTodoDialog(
           todo: todo,
@@ -333,121 +333,18 @@ class _TodoWebSimpleState extends State<TodoWebSimple> {
     }
   }
 
-  void _openFilters(BuildContext context, TodoProvider provider) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        final tags = provider.allTodos.expand((t) => t.tags).toSet().toList();
-        final selectedTags = <String>{}..addAll(provider.selectedTags);
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Advanced Filters', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 12),
-                    const Text('Status'),
-                    Wrap(
-                      spacing: 8,
-                      children: ['All', 'Active', 'Done']
-                          .map(
-                            (s) => ChoiceChip(
-                              label: Text(s),
-                              selected: provider.statusFilter == s,
-                              onSelected: (_) => provider.setStatusFilter(s),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text('Priority'),
-                    Wrap(
-                      spacing: 8,
-                      children: _priorities
-                          .map(
-                            (p) => ChoiceChip(
-                              label: Text(p),
-                              selected: provider.priorityFilter == p,
-                              onSelected: (_) => provider.setPriorityFilter(p),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text('Repeat'),
-                    Wrap(
-                      spacing: 8,
-                      children: _repeatRules
-                          .map(
-                            (r) => ChoiceChip(
-                              label: Text(r),
-                              selected: provider.repeatFilter == r,
-                              onSelected: (_) => provider.setRepeatFilter(r),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text('Only overdue'),
-                            value: provider.showOverdueOnly,
-                            onChanged: (val) => provider.setOverdueOnly(val),
-                          ),
-                        ),
-                        Expanded(
-                          child: SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text('Due today'),
-                            value: provider.showTodayOnly,
-                            onChanged: (val) => provider.setTodayOnly(val),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (tags.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      const Text('Tags'),
-                      Wrap(
-                        spacing: 8,
-                        children: tags
-                            .map(
-                              (tag) => FilterChip(
-                                label: Text('#$tag'),
-                                selected: selectedTags.contains(tag),
-                                onSelected: (val) {
-                                  setState(() {
-                                    if (val) {
-                                      selectedTags.add(tag);
-                                    } else {
-                                      selectedTags.remove(tag);
-                                    }
-                                  });
-                                  provider.setSelectedTags(selectedTags);
-                                },
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+  Uint8List? _decodePhoto(String? base64Str) {
+    if (base64Str == null || base64Str.isEmpty) return null;
+    try {
+      return base64Decode(base64Str);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _openProfile(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ProfileScreen()),
     );
   }
 }

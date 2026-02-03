@@ -15,6 +15,7 @@ class DashboardChart extends StatelessWidget {
   Widget build(BuildContext context) {
     // Determine if chart is empty
     final bool isEmpty = doneCount == 0 && activeCount == 0;
+    final scheme = Theme.of(context).colorScheme;
 
     return SizedBox(
       height: 200,
@@ -28,7 +29,7 @@ class DashboardChart extends StatelessWidget {
               sections: isEmpty
                   ? [
                       PieChartSectionData(
-                        color: Colors.grey.shade300,
+                        color: scheme.onSurface.withOpacity(0.15),
                         value: 1,
                         title: '',
                         radius: 20,
@@ -36,25 +37,25 @@ class DashboardChart extends StatelessWidget {
                     ]
                   : [
                       PieChartSectionData(
-                        color: Colors.indigoAccent,
+                        color: scheme.primary,
                         value: activeCount.toDouble(),
                         title: '${((activeCount / (activeCount + doneCount)) * 100).toStringAsFixed(0)}%',
                         radius: 50,
-                        titleStyle: const TextStyle(
+                        titleStyle: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: scheme.onPrimary,
                         ),
                       ),
                       PieChartSectionData(
-                        color: Colors.greenAccent,
+                        color: Colors.green,
                         value: doneCount.toDouble(),
                         title: '${((doneCount / (activeCount + doneCount)) * 100).toStringAsFixed(0)}%',
                         radius: 50,
-                        titleStyle: const TextStyle(
+                        titleStyle: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: scheme.onPrimary,
                         ),
                       ),
                     ],
@@ -67,16 +68,16 @@ class DashboardChart extends StatelessWidget {
                 'Total',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
                   fontWeight: FontWeight.w500,
                 ),
               ),
               Text(
                 '${activeCount + doneCount}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.indigo,
+                  color: scheme.primary,
                 ),
               ),
             ],
